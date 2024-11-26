@@ -1,8 +1,9 @@
-name: Run Tests and Comment Results
+name: Plugin Test
 
 on:
-  pull_request:
-    types: [opened, synchronize]
+  push:
+    branches:
+      - main # Or your main branch name
 
 jobs:
   test:
@@ -15,10 +16,8 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'
+          java-version: '11' # Or your desired Java version
+          distribution: 'temurin'
 
-      - name: Run Tests and Post Results
-        run: ./gradlew greet
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+      - name: Run plugin task
+        run: ./gradlew greet # Replace 'greet' with your plugin's task name
