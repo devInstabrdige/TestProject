@@ -19,8 +19,9 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '11'
-          distribution: 'temurin'
+          java-version: '17'               # Specify Java version
+          distribution: 'temurin'           # Specify the JDK distribution
+          cache: 'gradle'                   # Cache Gradle dependencies
 
       - name: Verify Gradle Wrapper
         run: |
@@ -35,7 +36,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number || '' }}  # Empty if not a PR
 
-      # Optional: Post results only if this is a pull request
+      # Optional: Post Test Results to PR (only for pull requests)
       - name: Post Test Results to PR (only for pull requests)
         if: ${{ github.event_name == 'pull_request' }}
         run: |
