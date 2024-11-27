@@ -31,6 +31,7 @@ afterEvaluate {
         }
         repositories {
             mavenLocal()
+            gradlePluginPortal()
         }
     }
 }

@@ -18,9 +18,9 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         mavenLocal()
+        gradlePluginPortal()
     }
 }
 
 rootProject.name = "My Application"
-include(":app")
-include(":plugin")
+include(":app",":plugin")
