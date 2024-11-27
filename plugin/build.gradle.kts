@@ -10,14 +10,14 @@ plugins {
 group = "com.example"
 version = "1.0.0"
 
-gradlePlugin {
-    plugins {
-        create("testGradlePlugin") {
-            id = "com.example.testgradleplugin"
-            implementationClass = "com.example.plugin.TestGradlePlugin"
-        }
-    }
-}
+//gradlePlugin {
+//    plugins {
+//        create("testGradlePlugin") {
+//            id = "com.example.testgradleplugin"
+//            implementationClass = "com.example.plugin.TestGradlePlugin"
+//        }
+//    }
+//}
 
 afterEvaluate {
     publishing {
