@@ -3,7 +3,10 @@ name: Plugin Test
 on:
   push:
     branches:
-      - main # Or your main branch name
+      - main  # Or your main branch name
+  pull_request:  # Run for pull requests as well
+    branches:
+      - main  # Or your main branch name
 
 jobs:
   test:
@@ -19,8 +22,23 @@ jobs:
           java-version: '11'
           distribution: 'temurin'
 
+      - name: Verify Gradle Wrapper
+        run: |
+          if [ ! -f ./gradlew ]; then
+            echo "Gradle wrapper not found! Please add it to your repository."
+            exit 1
+          fi
+
       - name: Run plugin task
         run: ./gradlew greet
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}  # Empty if not a PR
+
+      # Optional: Post results only if this is a pull request
+      - name: Post Test Results to PR (only for pull requests)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |
+          echo "Posting test results for PR #${{ github.event.pull_request.number }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
