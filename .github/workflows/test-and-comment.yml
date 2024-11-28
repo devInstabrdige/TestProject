@@ -1,9 +1,46 @@
+name: Run Danger on Pull Requests
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop  # Add other branches if necessary
+
 jobs:
-  build:
+  danger:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      # Step 1: Checkout the code
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up JDK for Android
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '11'  # Use the appropriate Java version for your project
+
+      # Step 3: Install Dependencies (Optional, if necessary)
+      - name: Install dependencies
+        run: ./gradlew dependencies
+
+      # Step 4: Run Unit Tests and Generate JaCoCo Coverage
+      - name: Run Unit Tests with Coverage
+        run: ./gradlew testDebugUnitTest jacocoTestReport
+
+      # Step 5: Run Danger Kotlin
       - name: Run Danger
-        uses: danger/kotlin@1.3.1
+        run: |
+          bash <(curl -s https://raw.githubusercontent.com/danger/kotlin/master/scripts/install.sh)
+          danger-kotlin ci --dangerfile=Dangerfile.df.kts
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Optional: Upload Coverage Report as Artifact
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: app/build/reports/jacoco/jacocoTestReport/html  # Adjust path as necessary
