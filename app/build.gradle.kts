@@ -22,9 +22,11 @@ android {
     buildTypes {
         debug {
             enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
         }
         release {
             enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -43,7 +45,39 @@ android {
         compose = true
     }
 
+    testCoverage {
+        jacocoVersion = "0.8.8"
+    }
 
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.named("testDebugUnitTest"))  // Ensure tests run before generating the report
+
+    reports {
+        xml.required.set(true)  // For CI integration
+        html.required.set(true) // For local viewing
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*"
+    )
+
+    val debugTree = fileTree("${buildDir}/intermediates/javac/debug") {
+        exclude(fileFilter)
+    }
+    val mainSrc = "${project.projectDir}/src/main/java"
+
+    classDirectories.setFrom(files(debugTree))
+    sourceDirectories.setFrom(files(mainSrc))
+    executionData.setFrom(fileTree(buildDir) {
+        include("**/jacoco/testDebugUnitTest.exec")
+    })
 }
 
 dependencies {
