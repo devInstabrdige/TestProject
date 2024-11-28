@@ -36,7 +36,7 @@ jobs:
           bash <(curl -s https://raw.githubusercontent.com/danger/kotlin/master/scripts/install.sh)
           danger-kotlin ci --dangerfile=Dangerfile.df.kts
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.DANGER_GITHUB_TOKEN }}
 
       # Optional: Upload Coverage Report as Artifact
       - name: Upload Coverage Report
