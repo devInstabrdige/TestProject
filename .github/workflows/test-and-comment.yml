@@ -20,7 +20,7 @@ jobs:
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '11'  # Use the appropriate Java version for your project
+          java-version: '17'  # Use the appropriate Java version for your project
 
       # Step 3: Install Dependencies (Optional, if necessary)
       - name: Install dependencies
