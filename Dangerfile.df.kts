@@ -1,44 +1,34 @@
-import systems.danger.kotlin.sdk.github.GitHub
-import systems.danger.kotlin.sdk.*
+import danger.*
+import java.io.File
 
-danger(args) {
-    onGitHub {
-        // 1. Check for a PR description
-        if (pullRequest.body.isNullOrEmpty()) {
-            warn("Please provide a description for this PR.")
-        }
+// Paths to the Jacoco and Test result files
+val jacocoReportPath = "app/build/reports/jacoco/testDebugUnitTest/coverage.xml"
+val testReportPath = "app/build/test-results/testDebugUnitTest/TESTS-TestSuite.xml"
 
-        // 2. Warn about large PRs
-        val bigPRThreshold = 500
-        val totalChanges = pullRequest.additions + pullRequest.deletions
-        if (totalChanges > bigPRThreshold) {
-            warn("This PR is quite large ($totalChanges lines). Consider splitting it into smaller, focused PRs.")
-        }
+// Check if Jacoco and Test Results files exist
+if (File(jacocoReportPath).exists() && File(testReportPath).exists()) {
+    // Parse Jacoco report to get coverage information
+    val jacocoData = File(jacocoReportPath).readText()
+    val regex = Regex("<counter type=\"LINE\" missed=\"(\\d+)\" covered=\"(\\d+)\"")
+    val matchResult = regex.find(jacocoData)
 
-        // 3. Check for modified Kotlin test files
-        val testFilesModified = git.modifiedFiles.filter {
-            it.endsWith(".kt") && (it.contains("src/test") || it.contains("src/androidTest"))
-        }
-        if (testFilesModified.isEmpty()) {
-            warn("No test files were modified. Please ensure tests are added or updated for your changes.")
-        }
+    val missedLines = matchResult?.groups?.get(1)?.value?.toIntOrNull() ?: 0
+    val coveredLines = matchResult?.groups?.get(2)?.value?.toIntOrNull() ?: 0
+    val totalLines = missedLines + coveredLines
+    val coveragePercentage = (coveredLines.toDouble() / totalLines) * 100
 
-        // 4. Check for modified Gradle files
-        val gradleFilesModified = git.modifiedFiles.filter {
-            it.endsWith(".gradle") || it.endsWith(".gradle.kts")
-        }
-        if (gradleFilesModified.isNotEmpty()) {
-            message("Gradle files have been modified. Please verify that the dependencies are correctly updated.")
-        }
+    // Post Jacoco Coverage Results to PR
+    message("### Jacoco Coverage\nCoverage: %.2f%%".format(coveragePercentage))
 
-        // 5. Check for new files without a license header
-        val newFiles = git.createdFiles
-        val licenseHeaderRegex = Regex("Copyright \\d{4} The Android Open Source Project") // Adjust as needed
-        newFiles.forEach { file ->
-            val content = danger.utils.readFile(file)
-            if (!content.contains(licenseHeaderRegex)) {
-                warn("The file '$file' is missing a license header.")
-            }
-        }
+    // Check if any test cases failed
+    val testResults = File(testReportPath).readText()
+    val failedTests = Regex("<failure").find(testResults)
+
+    if (failedTests != null) {
+        warn("Some tests failed! Please review the test results.")
+    } else {
+        message("All tests passed successfully!")
     }
+} else {
+    warn("Jacoco or test results not found. Please check your test configuration.")
 }
