@@ -1,9 +1,5 @@
-import androidx.preference.contains
-import androidx.preference.forEach
-import androidx.preference.isEmpty
-import androidx.preference.isNotEmpty
+import systems.danger.kotlin.sdk.github.GitHub
 import systems.danger.kotlin.sdk.*
-import systems.danger.kotlin.sdk.github.*
 
 danger(args) {
     onGitHub {
