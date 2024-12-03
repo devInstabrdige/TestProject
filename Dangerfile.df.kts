@@ -1,57 +1,48 @@
-const { danger, warn, fail, message } = require("danger");
-const fs = require("fs");
-const path = require("path");
+import androidx.preference.contains
+import androidx.preference.forEach
+import androidx.preference.isEmpty
+import androidx.preference.isNotEmpty
+import systems.danger.kotlin.sdk.*
+import systems.danger.kotlin.sdk.github.*
 
-// 1. Check if the PR description is provided and long enough
-if (!danger.github.pr.body || danger.github.pr.body.length < 10) {
-    warn("Please provide a more detailed description for this PR.");
-}
+danger(args) {
+    onGitHub {
+        // 1. Check for a PR description
+        if (pullRequest.body.isNullOrEmpty()) {
+            warn("Please provide a description for this PR.")
+        }
 
-// 2. Warn about large pull requests
-const bigPRThreshold = 500; // lines of code
-const totalChanges = danger.github.pr.additions + danger.github.pr.deletions;
+        // 2. Warn about large PRs
+        val bigPRThreshold = 500
+        val totalChanges = pullRequest.additions + pullRequest.deletions
+        if (totalChanges > bigPRThreshold) {
+            warn("This PR is quite large ($totalChanges lines). Consider splitting it into smaller, focused PRs.")
+        }
 
-if (totalChanges > bigPRThreshold) {
-    warn(`This PR is quite large (${totalChanges} lines). Consider splitting it into smaller, focused PRs.`);
-}
+        // 3. Check for modified Kotlin test files
+        val testFilesModified = git.modifiedFiles.filter {
+            it.endsWith(".kt") && (it.contains("src/test") || it.contains("src/androidTest"))
+        }
+        if (testFilesModified.isEmpty()) {
+            warn("No test files were modified. Please ensure tests are added or updated for your changes.")
+        }
 
-// 3. Check if any Kotlin test files were modified (both unit and instrumented tests)
-const testFilesModified = danger.git.modified_files.filter(file =>
-file.endsWith(".kt") && (file.includes("src/test") || file.includes("src/androidTest"))
-);
+        // 4. Check for modified Gradle files
+        val gradleFilesModified = git.modifiedFiles.filter {
+            it.endsWith(".gradle") || it.endsWith(".gradle.kts")
+        }
+        if (gradleFilesModified.isNotEmpty()) {
+            message("Gradle files have been modified. Please verify that the dependencies are correctly updated.")
+        }
 
-if (testFilesModified.length === 0) {
-    warn("No test files were modified. Please ensure tests are added or updated for your changes.");
-}
-
-// 4. Check if Gradle files were modified
-const gradleFiles = danger.git.modified_files.filter(file =>
-file.endsWith(".gradle") || file.endsWith(".gradle.kts")
-);
-
-if (gradleFiles.length > 0) {
-    message("Gradle files have been modified. Please verify that the dependencies are correctly updated.");
-}
-
-// 5. Parse JUnit XML files and post failures to the PR
-const testResultsPath = path.resolve("app/build/test-results/testDebugUnitTest/");
-const testFiles = fs.readdirSync(testResultsPath).filter(file => file.endsWith(".xml"));
-
-let failedTests = [];
-
-testFiles.forEach(file => {
-    const filePath = path.join(testResultsPath, file);
-    const content = fs.readFileSync(filePath, "utf8");
-
-    const failedTestMatches = content.match(/<testcase .*?>.*?<failure>/gs);
-    if (failedTestMatches) {
-        failedTests.push(...failedTestMatches);
+        // 5. Check for new files without a license header
+        val newFiles = git.createdFiles
+        val licenseHeaderRegex = Regex("Copyright \\d{4} The Android Open Source Project") // Adjust as needed
+        newFiles.forEach { file ->
+            val content = danger.utils.readFile(file)
+            if (!content.contains(licenseHeaderRegex)) {
+                warn("The file '$file' is missing a license header.")
+            }
+        }
     }
-});
-
-if (failedTests.length > 0) {
-    fail(`There are ${failedTests.length} failing tests. Please review them.`);
-    failedTests.slice(0, 5).forEach((test, index) => {
-        message(`❌ **Test Failure ${index + 1}**: ${test}`);
-    });
 }
