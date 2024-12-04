@@ -1,37 +1,27 @@
-@file:Repository("https://repo.maven.apache.org/maven2/")
-@file:DependsOn("org.apache.commons:commons-text:1.6")
-./gradlew testDebugUnitTest jacocoTestReport
-import danger.*
+@file:DependsOn("net.appsynth.danger:danger-kotlin-jacoco:X.Y.Z")
+
+import net.appsynth.danger.JaCoCoPlugin
+import net.appsynth.danger.jacoco
+import systems.danger.kotlin.*
 import java.io.File
+import kotlin.io.walk
 
-// Paths to the Jacoco and Test result files
-val jacocoReportPath = "app/build/reports/jacoco/testDebugUnitTest/coverage.xml"
-val testReportPath = "app/build/test-results/testDebugUnitTest/TESTS-TestSuite.xml"
+register plugin JaCoCoPlugin
 
-// Check if Jacoco and Test Results files exist
-if (File(jacocoReportPath).exists() && File(testReportPath).exists()) {
-    // Parse Jacoco report to get coverage information
-    val jacocoData = File(jacocoReportPath).readText()
-    val regex = Regex("<counter type=\"LINE\" missed=\"(\\d+)\" covered=\"(\\d+)\"")
-    val matchResult = regex.find(jacocoData)
+danger(args) {
+    val changedFiles =  git.modifiedFiles + git.createdFiles
 
-    val missedLines = matchResult?.groups?.get(1)?.value?.toIntOrNull() ?: 0
-    val coveredLines = matchResult?.groups?.get(2)?.value?.toIntOrNull() ?: 0
-    val totalLines = missedLines + coveredLines
-    val coveragePercentage = (coveredLines.toDouble() / totalLines) * 100
+    jacoco {
+        val coverageReports = File(".")
+            .walk()
+            .maxDepth(10)
+            .filter {
+                it.name == "jacoco.xml" && !it.path.contains("ref-report")
+            }
+            .toList()
 
-    // Post Jacoco Coverage Results to PR
-    message("### Jacoco Coverage\nCoverage: %.2f%%".format(coveragePercentage))
-
-    // Check if any test cases failed
-    val testResults = File(testReportPath).readText()
-    val failedTests = Regex("<failure").find(testResults)
-
-    if (failedTests != null) {
-        warn("Some tests failed! Please review the test results.")
-    } else {
-        message("All tests passed successfully!")
+        parse(*coverageReports.toTypedArray())
+        reference(File("ref-report/jacoco.xml"))
+        report(changedFiles.filter { it.endsWith(".kt") || it.endsWith(".java") })
     }
-} else {
-    warn("Jacoco or test results not found. Please check your test configuration.")
 }
