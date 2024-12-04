@@ -1,4 +1,4 @@
-@file:DependsOn("net.appsynth.danger:danger-kotlin-jacoco:X.Y.Z")
+@file:DependsOn("net.appsynth.danger:danger-kotlin-jacoco:0.1.0")
 
 import net.appsynth.danger.JaCoCoPlugin
 import net.appsynth.danger.jacoco
