@@ -1,45 +1,46 @@
-name: Plugin Test
+name: Run Danger on Pull Requests
 
 on:
-  push:
+  pull_request:
     branches:
-      - main  # Or your main branch name
-  pull_request:  # Run for pull requests as well
-    branches:
-      - main  # Or your main branch name
+      - main
+      - develop  # Add other branches if necessary
 
 jobs:
-  test:
+  danger:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      # Step 1: Checkout the code
+      - name: Check out code
         uses: actions/checkout@v3
 
+      # Step 2: Set up JDK for Android
       - name: Set up JDK
         uses: actions/setup-java@v3
         with:
-          java-version: '17'               # Specify Java version
-          distribution: 'temurin'           # Specify the JDK distribution
-          cache: 'gradle'                   # Cache Gradle dependencies
+          distribution: 'temurin'
+          java-version: '17'  # Use the appropriate Java version for your project
 
-      - name: Verify Gradle Wrapper
+      # Step 3: Install Dependencies (Optional, if necessary)
+      - name: Install dependencies
+        run: ./gradlew dependencies
+
+      # Step 4: Run Unit Tests and Generate JaCoCo Coverage
+      - name: Run Unit Tests with Coverage
+        run: ./gradlew testDebugUnitTest jacocoTestReport
+
+      # Step 5: Run Danger Kotlin
+      - name: Run Danger
         run: |
-          if [ ! -f ./gradlew ]; then
-            echo "Gradle wrapper not found! Please add it to your repository."
-            exit 1
-          fi
-
-      - name: Run plugin task
-        run: ./gradlew greet
+          bash <(curl -s https://raw.githubusercontent.com/danger/kotlin/master/scripts/install.sh)
+          danger-kotlin ci --dangerfile=Dangerfile.df.kts
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ github.event.pull_request.number || '' }}  # Empty if not a PR
+          GITHUB_TOKEN: ${{ secrets.DANGER_GITHUB_TOKEN }}
 
-      # Optional: Post Test Results to PR (only for pull requests)
-      - name: Post Test Results to PR (only for pull requests)
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          echo "Posting test results for PR #${{ github.event.pull_request.number }}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Optional: Upload Coverage Report as Artifact
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: app/build/reports/jacoco/jacocoTestReport/html  # Adjust path as necessary

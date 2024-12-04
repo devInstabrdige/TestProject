@@ -4,5 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.jetbrains.kotlin.jvm) apply false
-    id("com.example.testgradleplugin") version "1.0.0"
+    id("com.android.library") version "8.0.0" apply false
+    //id("com.example.testgradleplugin") version "1.0.0"
+    jacoco
 }
+
