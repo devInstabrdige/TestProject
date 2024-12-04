@@ -23,6 +23,7 @@ android {
         debug {
             enableUnitTestCoverage = true
             enableAndroidTestCoverage = true
+
         }
         release {
             enableUnitTestCoverage = true
@@ -49,7 +50,10 @@ android {
         jacocoVersion = "0.8.8"
     }
 
+
 }
+
+
 
 tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn(tasks.named("testDebugUnitTest"))  // Ensure tests run before generating the report
