@@ -77,7 +77,7 @@ android {
                     fileTree(this@closureOf.javaCompileProvider.get().destinationDir) {
                         exclude(excludes)
                     },
-                    fileTree("$buildDir/tmp/kotlin-classes/${this@closureOf.name}") {
+                    fileTree("$layout. buildDirectory/tmp/kotlin-classes/${this@closureOf.name}") {
                         exclude(excludes)
                     }
                 )
@@ -85,7 +85,7 @@ android {
 
             // Code underneath /src/{variant}/kotlin will also be picked up here
             sourceDirectories.setFrom(this@closureOf.sourceSets.flatMap { it.javaDirectories })
-            executionData.setFrom(file("$buildDir/jacoco/$testTaskName.exec"))
+            executionData.setFrom(file("$layout. buildDirectory/jacoco/$testTaskName.exec"))
         }
 
         jacocoTestReport.dependsOn(reportTask)
@@ -101,8 +101,10 @@ jacoco {
 tasks.withType<Test> {
     configure<JacocoTaskExtension> {
         isIncludeNoLocationClasses = true
+        excludes = listOf("jdk.internal.*")
     }
 }
+
 
 val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn(tasks.named("testDebugUnitTest"))  // Ensure tests run before generating the report
@@ -121,14 +123,15 @@ val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
         "android/**/*.*"
     )
 
-    val debugTree = fileTree("${buildDir}/intermediates/javac/debug") {
+
+    val debugTree = fileTree("${layout.buildDirectory}/intermediates/javac/debug") {
         exclude(fileFilter)
     }
     val mainSrc = "${project.projectDir}/src/main/java"
 
     classDirectories.setFrom(files(debugTree))
     sourceDirectories.setFrom(files(mainSrc))
-    executionData.setFrom(fileTree(buildDir) {
+    executionData.setFrom(fileTree(layout.buildDirectory) {
         include("**/jacoco/testDebugUnitTest.exec")
     })
 }
