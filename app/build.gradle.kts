@@ -1,3 +1,5 @@
+import com.android.build.gradle.internal.tasks.factory.dependsOn
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -47,15 +49,62 @@ android {
     }
 
     testCoverage {
-        jacocoVersion = "0.8.8"
+        jacocoVersion = "0.8.12"
     }
 
 
+    applicationVariants.all(closureOf<com.android.build.gradle.api.ApplicationVariant> {
+        val testTaskName = "test${this@closureOf.name.capitalize()}UnitTest"
+
+        val excludes = listOf(
+            // Android
+            "**/R.class",
+            "**/R\$*.class",
+            "**/BuildConfig.*",
+            "**/Manifest*.*"
+        )
+
+        val reportTask = tasks.register("jacoco${testTaskName.capitalize()}Report", JacocoReport::class) {
+            dependsOn(testTaskName)
+
+//            reports {
+//                xml.isEnabled = true
+//                html.isEnabled = true
+//            }
+
+            classDirectories.setFrom(
+                files(
+                    fileTree(this@closureOf.javaCompileProvider.get().destinationDir) {
+                        exclude(excludes)
+                    },
+                    fileTree("$buildDir/tmp/kotlin-classes/${this@closureOf.name}") {
+                        exclude(excludes)
+                    }
+                )
+            )
+
+            // Code underneath /src/{variant}/kotlin will also be picked up here
+            sourceDirectories.setFrom(this@closureOf.sourceSets.flatMap { it.javaDirectories })
+            executionData.setFrom(file("$buildDir/jacoco/$testTaskName.exec"))
+        }
+
+        jacocoTestReport.dependsOn(reportTask)
+    })
+
 }
 
+jacoco {
+    toolVersion = "0.8.12"
+    reportsDirectory = layout.buildDirectory.dir("customJacocoReportDir")
+}
 
+tasks.withType<Test> {
+    configure<JacocoTaskExtension> {
+        isIncludeNoLocationClasses = true
+    }
+}
 
-tasks.register<JacocoReport>("jacocoTestReport") {
+val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn(tasks.named("testDebugUnitTest"))  // Ensure tests run before generating the report
 
     reports {
